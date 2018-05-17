@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import "./js/STLLoader";
 import "./js/Yan";
 import { Sphere } from 'three';
+import { equal } from 'assert';
 
 @Component({
   selector: 'app-load-stl',
@@ -23,7 +24,12 @@ export class LoadStlComponent {
   public fieldOfView: number = 80;
   public nearClippingPane: number = 0.1;
   public farClippingPane: number = 1900;
-
+  private raycaster;
+  private lastSelectObj;
+  private mouse = new THREE.Vector2();
+  // private INTERSECTED;
+  public aycaster = new THREE.Raycaster(); 
+  private arrow;
 
   public controls: THREE.OrbitControls;
   @ViewChild('canvas')
@@ -76,9 +82,9 @@ export class LoadStlComponent {
 
       console.log(geometry);
 
-      // for (var f = 0, f1 = geometry.faces.length; f < f1; f++) { 
+      // for (var f = 0, f1 = geometry.faces.length; f < f1; f++) {
       //   var face = geometry.faces[f];
-      //   var centroid = new THREE.Vector3(0, 0, 0); 
+      //   var centroid = new THREE.Vector3(0, 0, 0);
 
       //   centroid.add(geometry.vertices[face.a]);
       //   centroid.add(geometry.vertices[face.b]);
@@ -93,15 +99,7 @@ export class LoadStlComponent {
     loader1.load('../../assets/model/die1.stl', function (geometry) {
       scene.add(new THREE.Mesh(geometry));
     });
-    loader.load("../../assets/model/cast.stl", function (geometry: any) {
-      console.log(geometry);
-      var mat = new THREE.MeshLambertMaterial({ color: 0x7777ff });
-      group = new THREE.Mesh(new THREE.Geometry, mat);
-      alert(55555555555555555555);
-      group.rotation.x = -0.5 * Math.PI;
-      group.scale.set(0.4, 0.4, 0.4);
-      scene.add(group);
-    });
+
   }
 
   public render() {
@@ -203,6 +201,22 @@ export class LoadStlComponent {
 
     let component: LoadStlComponent = this;
 
+    // find intersections
+    //  this.raycaster.setFromCamera( this.mouse, this.camera );
+    // var intersects = this.raycaster.intersectObjects( this.scene.children );
+    // if ( intersects.length > 0 ) {
+    //   if ( INTERSECTED != intersects[ 0 ].object ) {
+    //     if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //     INTERSECTED = intersects[ 0 ].object;
+    //     INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+    //     INTERSECTED.material.emissive.setHex( 0xff0000 );
+    //   }
+    // } else {
+    //   if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+    //   INTERSECTED = null;
+    // }
+
+
     (function render() {
       //requestAnimationFrame(render);
       component.render();
@@ -215,29 +229,33 @@ export class LoadStlComponent {
     this.controls.zoomSpeed = 1.2;
     this.controls.addEventListener('change', this.render);
 
-  }  /* EVENTS */
-
-  public onMouseDown(event: MouseEvent) {
-    console.log("onMouseDown");
-    event.preventDefault();
-
-    // Example of mesh selection/pick:
-    var raycaster = new THREE.Raycaster();
-    var mouse = new THREE.Vector2();
-    mouse.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
-    mouse.y = - (event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, this.camera);
-
-    var obj: THREE.Object3D[] = [];
-    this.findAllObjects(obj, this.scene);
-    var intersects = raycaster.intersectObjects(obj);
-    console.log("Scene has " + obj.length + " objects");
-    console.log(intersects.length + " intersected objects found")
-    intersects.forEach((i) => {
-      console.log(i.object); // do what you want to do with object
-    });
-
   }
+
+  public onDocumentMouseMove(event: MouseEvent) {
+    alert('aa');
+    event.preventDefault();
+    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+    // console.log(this.mouse);
+
+    this.aycaster.setFromCamera(this.mouse, this.camera); 
+    var intersects = this.raycaster.intersectObjects(this.scene.children);
+    console.log(intersects); 
+    if (intersects.length > 0) {
+      if (this.lastSelectObj != intersects[0].object) {
+        if (this.lastSelectObj) this.lastSelectObj.material.emissive.setHex(this.lastSelectObj.currentHex);
+        this.lastSelectObj = intersects[0].object;
+        this.lastSelectObj.currentHex = this.lastSelectObj.material.emissive.getHex();
+        this.lastSelectObj.material.emissive.setHex(0xff0000);
+      }
+    }
+    else {
+      if (this.lastSelectObj)
+        this.lastSelectObj.material.emissive.setHex(this.lastSelectObj.currentHex);
+      this.lastSelectObj = null;
+    }
+  }
+
 
   private findAllObjects(pred: THREE.Object3D[], parent: THREE.Object3D) {
     // NOTE: Better to keep separate array of selected objects
@@ -269,6 +287,75 @@ export class LoadStlComponent {
   @HostListener('document:keypress', ['$event'])
   public onKeyPress(event: KeyboardEvent) {
     console.log("onKeyPress: " + event.key);
+  }
+
+  private lastSelectObj_material;
+  //点击事件
+  @HostListener('mousedown', ['$event']) onMousedown(event) {
+    console.log("onMouseDown");
+    event.preventDefault();
+
+    // Example of mesh selection/pick:
+    this.raycaster = new THREE.Raycaster();
+    this.mouse = new THREE.Vector2();
+    this.mouse.x = (event.clientX / this.renderer.domElement.clientWidth) * 2 - 1;
+    this.mouse.y = - (event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+
+    //新建一个三维单位向量 假设z方向就是0.5
+    //根据照相机，把这个向量转换到视点坐标系
+    var vector = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5).unproject(this.camera);
+    //在视点坐标系中形成射线,射线的起点向量是照相机， 射线的方向向量是照相机到点击的点，这个向量应该归一标准化。
+    var raycaster = new THREE.Raycaster(this.camera.position, vector.sub(this.camera.position).normalize());
+
+    //射线和模型求交，选中一系列直线
+    var intersects = raycaster.intersectObjects(this.scene.children);
+    if (intersects.length > 0) {
+      //选中第一个射线相交的物体  
+      if (this.lastSelectObj != intersects[0].object) {
+        //选中的物体颜色
+        var cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
+        if (this.lastSelectObj && this.lastSelectObj_material)
+          this.lastSelectObj.material = this.lastSelectObj_material;//恢复上一个选中物体颜色
+        this.lastSelectObj = intersects[0].object;
+        this.lastSelectObj_material = this.lastSelectObj.material;
+         this.lastSelectObj.material = cubeMaterial;//修改当前选中物体颜色
+      }
+
+      //射线和模型求交，选中一系列直线  
+      var face = this.lastSelectObj.geometry.faces[0];
+       console.log("selected face:");
+      console.log(face);
+      // face.material= new THREE.MeshBasicMaterial({ color: 0x000088 }); 
+
+      // var material_line = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2, transparent: true });
+      // this.line = new THREE.Line(this.lastSelectObj.geometry, material_line);
+      // this.scene.add(this.line);
+
+      // var linePosition = this.line.geometry.attributes.position;
+      // alert(88);
+      // console.log(linePosition);
+
+      this.scene.remove(this.arrow);
+      var centroid = new THREE.Vector3(0, 0, 0);
+      console.log(this.lastSelectObj.geometry);
+      centroid.add(this.lastSelectObj.geometry.vertices[face.a]);
+      centroid.add(this.lastSelectObj.geometry.vertices[face.b]);
+      centroid.add(this.lastSelectObj.geometry.vertices[face.c]);
+      centroid.divideScalar(3);
+ 
+       this.arrow = new THREE.ArrowHelper(face.normal, centroid, 20, 0xffff66, 5, 5);
+      this.scene.add(this.arrow);
+      console.log("arrow:");  
+      console.log(this.arrow);  
+
+    }
+    else {
+      if (this.lastSelectObj)
+        this.lastSelectObj.material = this.lastSelectObj.material;
+      this.lastSelectObj = null;
+    }
+    this.startRendering(); 
   }
 
   /* LIFECYCLE */
