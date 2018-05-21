@@ -75,30 +75,27 @@ export class LoadStlComponent {
     //var p=Hello();
     var loader1 = new THREE.STLLoader();
     loader1.load('../../assets/model/cast.stl', function (geometry) {
-      var material = new THREE.MeshPhongMaterial({ color: 0xff5533, specular: 0x111111, shininess: 200 });
-      var mesh = new THREE.Mesh(geometry, material);
-      mesh.scale.set(2, 2, 2);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      var group = new THREE.Mesh(geometry, material);
+      var material0 = new THREE.MeshPhongMaterial({ color: 0xff5533, specular: 0x111111, shininess: 200 });
+      var material1 = new THREE.MeshPhongMaterial({ color: 0x000000, specular: 0x111111, shininess: 200 });
+      var materialArray = new Array()
+      materialArray[0] = material0;
+      materialArray[1] = material1;
+      var group = new THREE.Mesh(geometry, materialArray);
+      group.receiveShadow = true;
       console.log(geometry);
       scene.add(group);
     });
 
     loader1.load('../../assets/model/die1.stl', function (geometry) {
-      var material = new THREE.MeshPhongMaterial({ color: 0xAAAAAA, specular: 0x111111, shininess: 200 });
-      var mesh = new THREE.Mesh(geometry, material);
-      mesh.scale.set(2, 2, 2);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      var die = new THREE.Mesh(geometry, material);
+      var material0 = new THREE.MeshPhongMaterial({ color: 0xAAAAAA });
+      var material1 = new THREE.MeshPhongMaterial({ color: 0xffffff });
+      var materialArray = new Array()
+      materialArray[0] = material0;
+      materialArray[1] = material1;
+      var die = new THREE.Mesh(geometry, materialArray);
       scene.add(die);
     });
 
-  }
-
-  public render() {
-    this.renderer.render(this.scene, this.camera);
   }
 
   private onModelLoadingCompleted(collada) {
@@ -158,7 +155,7 @@ export class LoadStlComponent {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setClearColor(0x000000, 1);
-    this.renderer.shadowMapEnabled = true;
+    // this.renderer.shadowMapEnabled = true;
     this.renderer.autoClear = true;
 
     let component: LoadStlComponent = this;
@@ -167,6 +164,10 @@ export class LoadStlComponent {
       //requestAnimationFrame(render);
       component.render();
     }());
+  }
+
+  public render() {
+    this.renderer.render(this.scene, this.camera);
   }
 
   public addControls() {
@@ -249,7 +250,7 @@ export class LoadStlComponent {
     if (intersects.length > 0) {
       //选中第一个射线相交的物体  
       if (this.lastSelectObj != intersects[0].object) {
-        // //选中的物体颜色
+        //选中的物体颜色
         // var cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
         // if (this.lastSelectObj && this.lastSelectObj_material)
         //   this.lastSelectObj.material = this.lastSelectObj_material;//恢复上一个选中物体颜色
@@ -258,30 +259,24 @@ export class LoadStlComponent {
         // this.lastSelectObj.material = cubeMaterial;//修改当前选中物体颜色
       }
 
-
       console.log(intersects[0]);
-      alert(444);
-      var material = new THREE.LineBasicMaterial({ opacity: 1.0, linewidth: 5, vertexColors: THREE.VertexColors });
-      alert(555);
-      this.lastSelectObj.material.add(material);
-      //射线和模型求交，选中一系列直线 
+      //选中面
       var face = intersects[0].face;
       intersects[0].face.materialIndex = 1;
-      // intersects[0].face.color.setHex(Math.random() * 0xffffff);
       console.log("selected face:");
       console.log(face);
 
+      // intersects[0].object.needsUpdate=true;
+      // alert(333);
+      intersects[0].object.modelViewMatrix.u
       this.scene.remove(this.sphere);
       this.sphere = new THREE.Mesh(
         new THREE.SphereGeometry(2, 2),                //width,height,depth
-        new THREE.MeshLambertMaterial({ color: 0xff0000 }), //材质设定 
+        new THREE.MeshLambertMaterial({ color: 0x00ff00 }), //材质设定 
       );
 
       this.sphere.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
       this.scene.add(this.sphere);
-      //this.arrow = new THREE.ArrowHelper(face.normal, intersects[0].point, 20, 0xffff66, 5, 5);
-      //this.scene.add(this.arrow);
-
     }
     else {
       // if (this.lastSelectObj)
@@ -289,6 +284,9 @@ export class LoadStlComponent {
       this.lastSelectObj = null;
     }
     this.startRendering();
+
+    console.log("selected face11111:");
+    console.log(face);
   }
 
   /* LIFECYCLE */
