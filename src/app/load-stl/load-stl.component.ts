@@ -28,10 +28,11 @@ export class LoadStlComponent {
   private lastSelectObj;
   private mouse = new THREE.Vector2();
   // private INTERSECTED;
-  public aycaster = new THREE.Raycaster(); 
-  private arrow;
+  public aycaster = new THREE.Raycaster();
+  private sphere;
 
   public controls: THREE.OrbitControls;
+
   @ViewChild('canvas')
   private canvasRef: ElementRef;
 
@@ -74,30 +75,24 @@ export class LoadStlComponent {
     //var p=Hello();
     var loader1 = new THREE.STLLoader();
     loader1.load('../../assets/model/cast.stl', function (geometry) {
-      var mat = new THREE.MeshLambertMaterial({
-        color: 0x094beb,
-        emissive: 0x7f145f
-      });
-      var group = new THREE.Mesh(geometry, mat);
-
+      var material = new THREE.MeshPhongMaterial({ color: 0xff5533, specular: 0x111111, shininess: 200 });
+      var mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(2, 2, 2);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      var group = new THREE.Mesh(geometry, material);
       console.log(geometry);
-
-      // for (var f = 0, f1 = geometry.faces.length; f < f1; f++) {
-      //   var face = geometry.faces[f];
-      //   var centroid = new THREE.Vector3(0, 0, 0);
-
-      //   centroid.add(geometry.vertices[face.a]);
-      //   centroid.add(geometry.vertices[face.b]);
-      //   centroid.add(geometry.vertices[face.c]);
-      //   centroid.divideScalar(3);
-      //   var arrow= new THREE.ArrowHelper(face.normal,centroid,2,0x3333ff,0.5,0.5);
-      //   scene.add(arrow);
-      // }
-
       scene.add(group);
     });
+
     loader1.load('../../assets/model/die1.stl', function (geometry) {
-      scene.add(new THREE.Mesh(geometry));
+      var material = new THREE.MeshPhongMaterial({ color: 0xAAAAAA, specular: 0x111111, shininess: 200 });
+      var mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(2, 2, 2);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      var die = new THREE.Mesh(geometry, material);
+      scene.add(die);
     });
 
   }
@@ -114,41 +109,12 @@ export class LoadStlComponent {
 
 
   private createLight() {
-    var ambiColor = "#1c1c1c";
-    var ambientLight = new THREE.AmbientLight(ambiColor);
-    this.scene.add(ambientLight);
 
-
-
-    var pointColor = "#ffffff";
-    var directionalLight = new THREE.DirectionalLight(pointColor);
-    directionalLight.position.set(-400, 600, -100);
-    directionalLight.castShadow = true;
-    directionalLight.shadowCameraNear = 2;
-    directionalLight.shadowCameraFar = 200;
-    directionalLight.shadowCameraLeft = -50;
-    directionalLight.shadowCameraRight = 50;
-    directionalLight.shadowCameraTop = 50;
-    directionalLight.shadowCameraBottom = -50;
-
-    directionalLight.intensity = 0.5;
-    directionalLight.shadowMapHeight = 1024;
-    directionalLight.shadowMapWidth = 1024;
-
-
-    this.scene.add(directionalLight);
-
+    this.scene.add(new THREE.HemisphereLight(0x443333, 0x111122));
     //add spotlight for the shadows
-    var spotLight = new THREE.DirectionalLight(0xff5808);
+    var spotLight = new THREE.DirectionalLight(0xffffff);
     spotLight.position.set(-800, 800, 900);
-    // spotLight.castShadow = true;
-    // spotLight.target = new THREE.Object3D(){};
     this.scene.add(spotLight);
-
-    // var light = new THREE.PointLight(0xffffff);
-    // light.position.set(150, 150, 150);
-    // light.castShadow = true;
-    // this.scene.add(light);
   }
 
   private createCamera() {
@@ -183,39 +149,19 @@ export class LoadStlComponent {
     //   this.group.rotation.z += 0.006;
     //   //  group.rotation.x+=0.006;
     // }
-    // window.requestAnimationFrame(_ => this.startRendering());
-
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true
     });
     this.renderer.setPixelRatio(devicePixelRatio);
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
-
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.setClearColor(0x000000, 1);
-    //this.renderer.setClearColor(new THREE.Color(0x000, 1.0, 1.0));
     this.renderer.shadowMapEnabled = true;
     this.renderer.autoClear = true;
 
     let component: LoadStlComponent = this;
-
-    // find intersections
-    //  this.raycaster.setFromCamera( this.mouse, this.camera );
-    // var intersects = this.raycaster.intersectObjects( this.scene.children );
-    // if ( intersects.length > 0 ) {
-    //   if ( INTERSECTED != intersects[ 0 ].object ) {
-    //     if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-    //     INTERSECTED = intersects[ 0 ].object;
-    //     INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-    //     INTERSECTED.material.emissive.setHex( 0xff0000 );
-    //   }
-    // } else {
-    //   if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-    //   INTERSECTED = null;
-    // }
-
 
     (function render() {
       //requestAnimationFrame(render);
@@ -232,15 +178,13 @@ export class LoadStlComponent {
   }
 
   public onDocumentMouseMove(event: MouseEvent) {
-    alert('aa');
     event.preventDefault();
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-    // console.log(this.mouse);
 
-    this.aycaster.setFromCamera(this.mouse, this.camera); 
+    this.aycaster.setFromCamera(this.mouse, this.camera);
     var intersects = this.raycaster.intersectObjects(this.scene.children);
-    console.log(intersects); 
+    console.log(intersects);
     if (intersects.length > 0) {
       if (this.lastSelectObj != intersects[0].object) {
         if (this.lastSelectObj) this.lastSelectObj.material.emissive.setHex(this.lastSelectObj.currentHex);
@@ -256,7 +200,6 @@ export class LoadStlComponent {
     }
   }
 
-
   private findAllObjects(pred: THREE.Object3D[], parent: THREE.Object3D) {
     // NOTE: Better to keep separate array of selected objects
     if (parent.children.length > 0) {
@@ -270,7 +213,6 @@ export class LoadStlComponent {
   public onMouseUp(event: MouseEvent) {
     console.log("onMouseUp");
   }
-
 
   @HostListener('window:resize', ['$event'])
   public onResize(event: Event) {
@@ -302,60 +244,51 @@ export class LoadStlComponent {
     this.mouse.y = - (event.clientY / this.renderer.domElement.clientHeight) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.camera);
 
-    //新建一个三维单位向量 假设z方向就是0.5
-    //根据照相机，把这个向量转换到视点坐标系
-    var vector = new THREE.Vector3(this.mouse.x, this.mouse.y, 0.5).unproject(this.camera);
-    //在视点坐标系中形成射线,射线的起点向量是照相机， 射线的方向向量是照相机到点击的点，这个向量应该归一标准化。
-    var raycaster = new THREE.Raycaster(this.camera.position, vector.sub(this.camera.position).normalize());
-
     //射线和模型求交，选中一系列直线
-    var intersects = raycaster.intersectObjects(this.scene.children);
+    var intersects = this.raycaster.intersectObjects(this.scene.children);
     if (intersects.length > 0) {
       //选中第一个射线相交的物体  
       if (this.lastSelectObj != intersects[0].object) {
-        //选中的物体颜色
-        var cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
-        if (this.lastSelectObj && this.lastSelectObj_material)
-          this.lastSelectObj.material = this.lastSelectObj_material;//恢复上一个选中物体颜色
+        // //选中的物体颜色
+        // var cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x000088 });
+        // if (this.lastSelectObj && this.lastSelectObj_material)
+        //   this.lastSelectObj.material = this.lastSelectObj_material;//恢复上一个选中物体颜色
         this.lastSelectObj = intersects[0].object;
-        this.lastSelectObj_material = this.lastSelectObj.material;
-         this.lastSelectObj.material = cubeMaterial;//修改当前选中物体颜色
+        // this.lastSelectObj_material = this.lastSelectObj.material;
+        // this.lastSelectObj.material = cubeMaterial;//修改当前选中物体颜色
       }
 
-      //射线和模型求交，选中一系列直线  
-      var face = this.lastSelectObj.geometry.faces[0];
-       console.log("selected face:");
+
+      console.log(intersects[0]);
+      alert(444);
+      var material = new THREE.LineBasicMaterial({ opacity: 1.0, linewidth: 5, vertexColors: THREE.VertexColors });
+      alert(555);
+      this.lastSelectObj.material.add(material);
+      //射线和模型求交，选中一系列直线 
+      var face = intersects[0].face;
+      intersects[0].face.materialIndex = 1;
+      // intersects[0].face.color.setHex(Math.random() * 0xffffff);
+      console.log("selected face:");
       console.log(face);
-      // face.material= new THREE.MeshBasicMaterial({ color: 0x000088 }); 
 
-      // var material_line = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2, transparent: true });
-      // this.line = new THREE.Line(this.lastSelectObj.geometry, material_line);
-      // this.scene.add(this.line);
+      this.scene.remove(this.sphere);
+      this.sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(2, 2),                //width,height,depth
+        new THREE.MeshLambertMaterial({ color: 0xff0000 }), //材质设定 
+      );
 
-      // var linePosition = this.line.geometry.attributes.position;
-      // alert(88);
-      // console.log(linePosition);
-
-      this.scene.remove(this.arrow);
-      var centroid = new THREE.Vector3(0, 0, 0);
-      console.log(this.lastSelectObj.geometry);
-      centroid.add(this.lastSelectObj.geometry.vertices[face.a]);
-      centroid.add(this.lastSelectObj.geometry.vertices[face.b]);
-      centroid.add(this.lastSelectObj.geometry.vertices[face.c]);
-      centroid.divideScalar(3);
- 
-       this.arrow = new THREE.ArrowHelper(face.normal, centroid, 20, 0xffff66, 5, 5);
-      this.scene.add(this.arrow);
-      console.log("arrow:");  
-      console.log(this.arrow);  
+      this.sphere.position.set(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z);
+      this.scene.add(this.sphere);
+      //this.arrow = new THREE.ArrowHelper(face.normal, intersects[0].point, 20, 0xffff66, 5, 5);
+      //this.scene.add(this.arrow);
 
     }
     else {
-      if (this.lastSelectObj)
-        this.lastSelectObj.material = this.lastSelectObj.material;
+      // if (this.lastSelectObj)
+      //   this.lastSelectObj.material = this.lastSelectObj_material;
       this.lastSelectObj = null;
     }
-    this.startRendering(); 
+    this.startRendering();
   }
 
   /* LIFECYCLE */
